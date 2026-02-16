@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app import crud, schemas
+from app.models import User, Task 
 from app.dependencies import get_db, get_current_user
 
 
@@ -31,3 +32,24 @@ def delete_task(task_id: int, db: Session = Depends(get_db), user=Depends(get_cu
     if not deleted:
         raise HTTPException(status_code=404, detail="Task not found")
     return {"message": "Task deleted successfully"}
+
+@router.delete("/{task_id}")
+def delete_task(task_id: int, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    if current_user.role != "Admin" and task.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not allowed to delete this task")
+    
+    db.delete(task)
+    db.commit()
+    return {"msg": "Task deleted successfully"}
+
+@router.post("/unsubscribe")
+def unsubscribe(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    current_user.is_subscribed = False
+    db.commit()
+    return {"msg": "You have unsubscribed from email notifications."}
+
+
