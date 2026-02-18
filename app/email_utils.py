@@ -16,3 +16,20 @@ def send_verification_email(email: str, token: str):
     
     verification_link = f"http://localhost:8000/auth/verify?token={token}"
     print(f"Send this verification link to {email}: {verification_link}")
+
+def verify_verification_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email: str = payload.get("sub")
+
+        if email is None:
+            return None
+
+        return email
+
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=400, detail="Token expired")
+
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=400, detail="Invalid token")
+

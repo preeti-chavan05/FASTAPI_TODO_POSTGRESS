@@ -5,6 +5,8 @@ from app import crud, schemas, models
 from app.dependencies import get_db
 from app.auth import create_access_token
 from app.email_utils import create_verification_token, send_verification_email  
+from app.email_utils import verify_verification_token 
+from app.models import User
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 @router.post("/register")
@@ -34,3 +36,20 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
   
     token = create_access_token({"sub": str(user.id)})
     return {"access_token": token, "token_type": "bearer"}
+
+@router.get("/verify")
+def verify_email(token: str, db: Session = Depends(get_db)):
+    
+    email = verify_verification_token(token)
+    if not email:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    user.is_active = True
+    db.commit()
+
+    return {"message": "Email verified successfully!"}
+
