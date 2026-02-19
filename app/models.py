@@ -9,6 +9,7 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     password = Column(String)
     is_active = Column(Boolean, default=True) 
+    is_subscribed = Column(Boolean, default=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=True)
@@ -23,5 +24,5 @@ class Task(Base):
     priority = Column(String)
     status = Column(String)
     user_id = Column(Integer, ForeignKey("users.id"))
-    is_subscribed = Column(Boolean, default=True)
+    
 

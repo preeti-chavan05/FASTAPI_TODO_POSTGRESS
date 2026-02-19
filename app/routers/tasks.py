@@ -47,9 +47,15 @@ def delete_task(task_id: int, current_user: User = Depends(get_current_user), db
     return {"msg": "Task deleted successfully"}
 
 @router.post("/unsubscribe")
-def unsubscribe(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def unsubscribe(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     current_user.is_subscribed = False
     db.commit()
-    return {"msg": "You have unsubscribed from email notifications."}
+    db.refresh(current_user)   
 
-
+    return {
+        "msg": "You have unsubscribed from email notifications.",
+        "is_subscribed": current_user.is_subscribed
+    }
