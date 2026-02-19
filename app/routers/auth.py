@@ -23,7 +23,10 @@ def register(user: schemas.RegisterModel, db: Session = Depends(get_db)):
     token = create_verification_token(db_user.email)
     send_verification_email(db_user.email, token)
 
-    return {"msg": "User created. Please verify your email."}
+    return {
+        "msg": "User created. Please verify your email.",
+        "verification_token": token 
+    }
 
 
 @router.post("/login")
