@@ -7,6 +7,7 @@ class RegisterModel(BaseModel):
     password: Annotated[str, 
                         "min_length=6", "max_length=72"
                        ]
+    role: str = "User"
 
 class TaskBase(BaseModel):
     name: str
@@ -15,13 +16,13 @@ class TaskBase(BaseModel):
     end_date: date
     priority: str
     status: str
+    user_id: int | None = None 
 
 class TaskCreate(TaskBase):
     pass
 
 class TaskOut(TaskBase):
     id: int
-    user_id: int
 
     class Config:
         from_attributes = True 

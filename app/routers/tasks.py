@@ -7,24 +7,58 @@ from app.dependencies import get_db, get_current_user
 
 router = APIRouter(prefix="/tasks", tags=["tasks"])
 
+
 @router.post("", response_model=schemas.TaskOut)
-def create_task(task: schemas.TaskCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    return crud.create_task(db, task, user.id)
+def create_task(
+    task: schemas.TaskCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    new_task = crud.create_task(db, task, current_user)
+
+    if current_user.role == "Admin" and task.user_id:
+        assigned_user = db.query(User).filter(User.id == task.user_id).first()
+        if assigned_user and assigned_user.is_subscribed:
+            print(f"Email to {assigned_user.email}: New task assigned")
+
+    return new_task
+
 
 @router.get("", response_model=list[schemas.TaskOut])
 def get_tasks(db: Session = Depends(get_db), user=Depends(get_current_user)):
-    return crud.get_tasks(db, user.id)
+    return crud.get_tasks(db, user)
 
 @router.get("/filter", response_model=list[schemas.TaskOut])
 def filter_tasks(priority: str = None, status: str = None, db: Session = Depends(get_db), user=Depends(get_current_user)):
     return crud.filter_tasks(db, user.id, priority, status)
 
+
 @router.put("/{task_id}", response_model=schemas.TaskOut)
-def update_task(task_id: int, task: schemas.TaskCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
-    updated = crud.update_task(db, task_id, task, user.id)
+def update_task(
+    task_id: int,
+    task: schemas.TaskCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    updated = crud.update_task(db, task_id, task, current_user)
+
     if not updated:
         raise HTTPException(status_code=404, detail="Task not found")
+
+    if (
+        current_user.role == "User"
+        and updated.status == "Completed"
+    ):
+        admin = db.query(User).filter(User.role == "Admin").first()
+
+        if admin and admin.is_subscribed:
+            print(
+                f"Email to {admin.email}: "
+                f"Task '{updated.name}' completed by {current_user.email}"
+            )
+
     return updated
+
 
 @router.delete("/{task_id}")
 def delete_task(task_id: int, db: Session = Depends(get_db), user=Depends(get_current_user)):
